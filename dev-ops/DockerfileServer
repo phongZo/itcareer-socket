@@ -1,0 +1,40 @@
+# run: DOCKER_BUILDKIT=0 docker build --no-cache -t media_server:1.0.0 -f MediaDockerfile .
+# with cache: DOCKER_BUILDKIT=0 docker build -t media_server:1.0.0 -f MediaDockerfile .
+From debian:11.0
+
+WORKDIR /opt
+
+# Update system
+RUN apt-get update -y 
+
+# Install java
+# RUN apt-get install -y openjdk-11-jdk
+
+# Install ffmpeg
+# RUN apt-get install -y ffmpeg
+
+# Install C++
+RUN apt-get install -y build-essential libpcre3 libpcre3-dev libssl-dev zlib1g zlib1g-dev
+
+# Install wget
+RUN apt-get install wget -y
+
+# Install nginx
+RUN wget https://nginx.org/download/nginx-1.18.0.tar.gz
+RUN tar -xf nginx-1.18.0.tar.gz
+
+WORKDIR /opt/nginx-1.18.0
+RUN ./configure --with-http_ssl_module --with-http_secure_link_module
+RUN make -j
+RUN make install
+
+#RUN ls /usr/local/nginx
+COPY nginx.conf /usr/local/nginx/conf/nginx.conf
+
+# Cleanup
+WORKDIR /opt
+RUN rm -rf ./nginx-1.18.0.tar.gz
+RUN rm -rf ./nginx-1.18.0
+
+EXPOSE 80 443
+ENTRYPOINT ["/usr/local/nginx/sbin/nginx", "-g", "daemon off;"]

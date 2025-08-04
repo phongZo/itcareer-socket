@@ -1,0 +1,21 @@
+#
+# Copyright IBM Corp All Rights Reserved
+#
+# SPDX-License-Identifier: Apache-2.0
+#
+version: '2'
+networks:
+  default_network:
+    external: true
+    name: {NETWORKS}
+
+services:
+  apis:
+    container_name: {CONTAINER_NAME}
+    image: {CONTAINER_IMAGE}:1.0
+    restart: always
+    mem_limit: 1000m
+    networks:
+        - default_network
+    volumes:
+      - /data/deploy/lifUni/medias:/uploads

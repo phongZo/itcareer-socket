@@ -1,0 +1,239 @@
+_BUILD_NUMBER = env.BUILD_NUMBER
+_BRANCH_NAME = env.BRANCH_NAME
+
+TIMEZONE = "GMT+7"
+APP_BOOT_TIME_SECOND = 30
+SLACK_CHANNEL_NAME = "GMQ6JQ1FT"
+
+
+JAR_NAME_SOCKET = "lf.video-1.0-SNAPSHOT.jar"
+BUILD_FOLER="dev-ops"
+
+node {
+    try {
+        if (_BRANCH_NAME.matches("dev|staging")) {
+            notifyBuild("STARTED", SLACK_CHANNEL_NAME)
+        }
+
+        stage ("Checkout source") {
+            checkout scm
+        }
+
+        stage ("Unit test") {
+            println "Passed"
+        }
+        
+
+        if (_BRANCH_NAME.matches("dev")) {
+            buildDev()
+        }else if (_BRANCH_NAME.matches("staging")) {
+           buildStaging();
+        }
+
+        currentBuild.result = "SUCCESS"
+    } catch (e) {
+        currentBuild.result = "FAILURE"
+        throw e
+    } finally {
+        if (_BRANCH_NAME.matches("dev|staging")) {
+            def time = formatMilisecondTime(currentBuild.timeInMillis, TIMEZONE)
+            def duration = durationFormat(currentBuild.duration)
+            def buildDetail = "\n————————————————————" +
+                              "\n*Build Time:* ${time}" +
+                              "\n*Duration:* ${duration}" +
+                              "\n*Change Log (DESC):*\n${getChangeLog()}"
+
+            sleep(APP_BOOT_TIME_SECOND)
+            notifyBuild(currentBuild.result, SLACK_CHANNEL_NAME, buildDetail)
+        }
+    }
+
+}
+
+def buildDev(){
+    APP_NAME_SOCKET = "lf-video-svc"
+    TARTGET_FOLDER_DEPLOY="/data/deploy/ilearning"
+    NETWORKS="server_network"
+
+    stage ("Build source") {
+        withEnv( ["PATH+MAVEN=/usr/local/src/apache-maven/bin"] ) {
+            sh """
+                cp -r source dev-ops/source_build
+                cd dev-ops
+                cp cfg/* source_build/socket/src/main/resources/
+                cd source_build
+                mvn clean package
+            """
+        }
+    }
+
+   stage("Deploy socket") {
+        sh """
+            sudo mkdir -p ${TARTGET_FOLDER_DEPLOY}/${APP_NAME_SOCKET}-dev
+        """
+        
+        try {
+            sh """
+                sudo docker-compose -f ${TARTGET_FOLDER_DEPLOY}/${APP_NAME_SOCKET}-dev/docker-compose.yml down
+            """
+        } catch (e) {
+
+        }
+
+        sh """
+            sudo docker rmi -f ${APP_NAME_SOCKET}-dev:1.0
+            sudo rm -rf ${TARTGET_FOLDER_DEPLOY}/${APP_NAME_SOCKET}-dev/*
+
+            sudo mkdir -p ${TARTGET_FOLDER_DEPLOY}/${APP_NAME_SOCKET}-dev/lib
+            sudo cp ./${BUILD_FOLER}/source_build/socket/target/${JAR_NAME_SOCKET} ${TARTGET_FOLDER_DEPLOY}/${APP_NAME_SOCKET}-dev/lib/
+            sudo cp ./${BUILD_FOLER}/source_build/socket/target/lib/* ${TARTGET_FOLDER_DEPLOY}/${APP_NAME_SOCKET}-dev/lib/
+            
+            sudo mkdir -p ${TARTGET_FOLDER_DEPLOY}/${APP_NAME_SOCKET}-dev/classes
+            sudo rm -rf ./${BUILD_FOLER}/source_build/socket/target/classes/lf
+            sudo cp ./${BUILD_FOLER}/source_build/socket/target/classes/* ${TARTGET_FOLDER_DEPLOY}/${APP_NAME_SOCKET}-dev/classes/
+
+            
+            sudo cp ./${BUILD_FOLER}/docker-compose.yml ${TARTGET_FOLDER_DEPLOY}/${APP_NAME_SOCKET}-dev/
+            sudo cp ./${BUILD_FOLER}/Dockerfile ${TARTGET_FOLDER_DEPLOY}/${APP_NAME_SOCKET}-dev/
+            sudo cp ./${BUILD_FOLER}/run.sh ${TARTGET_FOLDER_DEPLOY}/${APP_NAME_SOCKET}-dev/
+
+            sudo sed -i 's/{NETWORKS}/${NETWORKS}/g' ${TARTGET_FOLDER_DEPLOY}/${APP_NAME_SOCKET}-dev/docker-compose.yml
+            sudo sed -i 's/{CONTAINER_NAME}/${APP_NAME_SOCKET}-dev/g' ${TARTGET_FOLDER_DEPLOY}/${APP_NAME_SOCKET}-dev/docker-compose.yml
+            sudo sed -i 's/{CONTAINER_IMAGE}/${APP_NAME_SOCKET}-dev/g' ${TARTGET_FOLDER_DEPLOY}/${APP_NAME_SOCKET}-dev/docker-compose.yml
+
+            sudo docker build -t ${APP_NAME_SOCKET}-dev:1.0 -f ${TARTGET_FOLDER_DEPLOY}/${APP_NAME_SOCKET}-dev/Dockerfile ${TARTGET_FOLDER_DEPLOY}/${APP_NAME_SOCKET}-dev/
+
+        """
+    }
+
+
+
+    stage ("Starting ${_BRANCH_NAME} environment") {
+        sh """
+            sudo docker-compose -f ${TARTGET_FOLDER_DEPLOY}/${APP_NAME_SOCKET}-dev/docker-compose.yml up -d
+        """
+    }
+}
+
+def buildStaging(){
+    APP_NAME_SOCKET = "lf-video-svc-demo"
+    TARTGET_FOLDER_DEPLOY="/data/deploy/lifUni/staging"
+    NETWORKS="server_network"
+
+    stage ("Build source") {
+        withEnv( ["PATH+MAVEN=/usr/local/src/apache-maven/bin"] ) {
+            sh """
+                cp -r source dev-ops/source_build
+                cd dev-ops
+                cp cfg/* source_build/socket/src/main/resources/
+                rm -rf source_build/socket/src/main/resources/configuration.properties
+                mv source_build/socket/src/main/resources/configuration-demo.properties source_build/socket/src/main/resources/configuration.properties
+                cd source_build
+                mvn clean package
+            """
+        }
+    }
+
+   stage("Deploy socket") {
+        sh """
+            sudo mkdir -p ${TARTGET_FOLDER_DEPLOY}/${APP_NAME_SOCKET}-dev
+        """
+        
+        try {
+            sh """
+                sudo docker-compose -f ${TARTGET_FOLDER_DEPLOY}/${APP_NAME_SOCKET}-dev/docker-compose.yml down
+            """
+        } catch (e) {
+
+        }
+
+        sh """
+            sudo docker rmi -f ${APP_NAME_SOCKET}-dev:1.0
+            sudo rm -rf ${TARTGET_FOLDER_DEPLOY}/${APP_NAME_SOCKET}-dev/*
+
+            sudo mkdir -p ${TARTGET_FOLDER_DEPLOY}/${APP_NAME_SOCKET}-dev/lib
+            sudo cp ./${BUILD_FOLER}/source_build/socket/target/${JAR_NAME_SOCKET} ${TARTGET_FOLDER_DEPLOY}/${APP_NAME_SOCKET}-dev/lib/
+            sudo cp ./${BUILD_FOLER}/source_build/socket/target/lib/* ${TARTGET_FOLDER_DEPLOY}/${APP_NAME_SOCKET}-dev/lib/
+            
+            sudo mkdir -p ${TARTGET_FOLDER_DEPLOY}/${APP_NAME_SOCKET}-dev/classes
+            sudo rm -rf ./${BUILD_FOLER}/source_build/socket/target/classes/lf
+            sudo cp ./${BUILD_FOLER}/source_build/socket/target/classes/* ${TARTGET_FOLDER_DEPLOY}/${APP_NAME_SOCKET}-dev/classes/
+
+            
+            sudo cp ./${BUILD_FOLER}/docker-compose.yml ${TARTGET_FOLDER_DEPLOY}/${APP_NAME_SOCKET}-dev/
+            sudo cp ./${BUILD_FOLER}/Dockerfile ${TARTGET_FOLDER_DEPLOY}/${APP_NAME_SOCKET}-dev/
+            sudo cp ./${BUILD_FOLER}/run.sh ${TARTGET_FOLDER_DEPLOY}/${APP_NAME_SOCKET}-dev/
+
+            sudo sed -i 's/{NETWORKS}/${NETWORKS}/g' ${TARTGET_FOLDER_DEPLOY}/${APP_NAME_SOCKET}-dev/docker-compose.yml
+            sudo sed -i 's/{CONTAINER_NAME}/${APP_NAME_SOCKET}-dev/g' ${TARTGET_FOLDER_DEPLOY}/${APP_NAME_SOCKET}-dev/docker-compose.yml
+            sudo sed -i 's/{CONTAINER_IMAGE}/${APP_NAME_SOCKET}-dev/g' ${TARTGET_FOLDER_DEPLOY}/${APP_NAME_SOCKET}-dev/docker-compose.yml
+
+            sudo docker build -t ${APP_NAME_SOCKET}-dev:1.0 -f ${TARTGET_FOLDER_DEPLOY}/${APP_NAME_SOCKET}-dev/Dockerfile ${TARTGET_FOLDER_DEPLOY}/${APP_NAME_SOCKET}-dev/
+
+        """
+    }
+
+
+
+    stage ("Starting ${_BRANCH_NAME} environment") {
+        sh """
+            sudo docker-compose -f ${TARTGET_FOLDER_DEPLOY}/${APP_NAME_SOCKET}-dev/docker-compose.yml up -d
+        """
+    }
+}
+
+
+// ================================
+// HELPER FUNCTION
+// ================================
+
+def notifyBuild(String buildStatus, String channelName, String message = "") {
+    def colorName = ""
+    def emoji = ""
+    if (buildStatus == "STARTED") {
+        colorName = "#2196f3"
+        emoji = ":fast_forward:"
+    } else if (buildStatus == "SUCCESS") {
+        colorName = "good"
+        emoji = ":white_check_mark:"
+    } else {
+        colorName = "#dc3545"
+        emoji = ":x:"
+    }
+
+    def text = "${emoji} ${buildStatus}: Job <${env.BUILD_URL}/console|${env.JOB_NAME} - build ${env.BUILD_NUMBER}>"
+    if (!message.isEmpty()) {
+        // concat a Combining Grapheme Joiner character U+034F before special character to prevent markdown formatting
+        // [char] => U+034F [char]
+        // reference: https://en.wikipedia.org/wiki/Combining_Grapheme_Joiner
+        text += message.replaceAll("`", "͏`")
+    }
+
+    slackSend (channel: channelName, failOnError: true, color: colorName, message: text)
+}
+
+def getChangeLog() {
+    def changeLogSets = currentBuild.changeSets
+    if (changeLogSets.isEmpty()) {
+        return "    (No changes)"
+    }
+
+    def text = ""
+    for (int i = changeLogSets.size() - 1; i >= 0; i--) {
+        for (def entry in changeLogSets[i].items) {
+            text += ":white_small_square: ${entry.author} - ${entry.msg}\n"
+        }
+    }
+    return text
+}
+
+def formatMilisecondTime(timeInMillis, timeZone) {
+    return new Date(timeInMillis).format("MMM dd, yyyy HH:mm:ss", TimeZone.getTimeZone(timeZone))
+}
+
+def durationFormat(long milisecond) {
+    def min = milisecond.intdiv(1000).intdiv(60)
+    def sec = milisecond.intdiv(1000) % 60
+    def result = (min > 0 ? "${min}m " : "") + (sec > 0 ? "${sec}s" : "")
+    return result
+}

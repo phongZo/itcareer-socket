@@ -1,0 +1,14 @@
+# run: DOCKER_BUILDKIT=0 docker build --no-cache -t media_img:1.0.0 -f DockerfileProcessing .
+# with cache: DOCKER_BUILDKIT=0 docker build -t media_img:1.0.0 -f DockerfileProcessing .
+From debian:11.0
+
+WORKDIR /opt
+
+# Update system
+RUN apt-get update -y 
+
+# Install java
+RUN apt-get install -y openjdk-11-jdk
+
+# Install ffmpeg
+RUN apt-get install -y ffmpeg
