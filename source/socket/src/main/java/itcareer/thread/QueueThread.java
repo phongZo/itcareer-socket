@@ -101,16 +101,7 @@ public class QueueThread extends AbstractRunable {
         String thumbnailPath;
         String newVideoPath;
 
-        String suffixId = (data.getTaskId() != null)
-            ? data.getTaskId().toString()
-            : (data.getSimulationId() != null ? data.getSimulationId().toString() : null);
-
-        if (suffixId == null) {
-            LOG.error("=====> Both simulationId and taskId are null. Cannot determine output folder.");
-            return;
-        }
-
-        String directoryName = data.getKind() + "_" + suffixId;
+        String directoryName = data.getKind() + "_" + data.getId();
 
         outputPath = String.join(File.separator, rootPath + VideoConstant.DIRECTORY_GENERAL, folderPathString, directoryName);
         thumbnailPath = String.join(File.separator, folderPathString, directoryName, "poster.jpg");
@@ -120,17 +111,17 @@ public class QueueThread extends AbstractRunable {
 
         try {
             long duration = FFmpegUtils.handleConvertToM3U8(inputPath, outputPath, config);
-            sendMsgToQueue(true, data.getSimulationId(), data.getTaskId(), thumbnailPath, newVideoPath, duration);
-        } catch (IOException | InterruptedException e) {
+            sendMsgToQueue(true, data.getId(), data.getKind(), thumbnailPath, newVideoPath, duration);
+        } catch (Exception e) {
             LOG.info("============> PROCESS VIDEO FAILED WITH ERROR: {}", e.getMessage());
-            sendMsgToQueue(false, data.getSimulationId(),data.getTaskId(),null, null, 0);
+            sendMsgToQueue(false, data.getId(),data.getKind(),null, null, 0);
         }
     }
-    private void sendMsgToQueue(boolean isSuccess, Long simulationId,Long taskId, String thumbnail, String newVideoPath, long duration) {
+    private void sendMsgToQueue(boolean isSuccess, Long id,Integer kind, String thumbnail, String newVideoPath, long duration) {
         DoneVideoProcessResponse data = new DoneVideoProcessResponse();
         data.setThumbnail(thumbnail);
-        data.setSimulationId(simulationId);
-        data.setTaskId(taskId);
+        data.setId(id);
+        data.setKind(kind);
         data.setIsSuccess(isSuccess);
         data.setContentPath(newVideoPath);
         data.setVideoDuration(duration);

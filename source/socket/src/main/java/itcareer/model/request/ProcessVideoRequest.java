@@ -9,8 +9,7 @@ import lombok.EqualsAndHashCode;
 public class ProcessVideoRequest extends ABasicRequest {
     private String app;
     private String url;
-    private Long simulationId;
-    private Long taskId;
+    private Long id;
     private Integer kind;
     private String tsSecond;
 }

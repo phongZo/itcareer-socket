@@ -7,8 +7,8 @@ import lombok.EqualsAndHashCode;
 @EqualsAndHashCode(callSuper = true)
 @Data
 public class DoneVideoProcessResponse extends ABasicResponse {
-    private Long simulationId;
-    private Long taskId;
+    private Long id;
+    private Integer kind;
     private String thumbnail;
     private Boolean isSuccess;
     private String contentPath;
