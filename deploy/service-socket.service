@@ -1,5 +1,5 @@
 [Unit]
-Description=LifeUni Video Service Application
+Description= Itdream Socket Service Application
 
 [Service]
 #User=root #use user with restricted permissions

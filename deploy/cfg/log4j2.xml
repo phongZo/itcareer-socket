@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Configuration status="WARN">
     <Properties>
-        <Property name="log-path">/var/log/lf/video-service</Property>
+        <Property name="log-path">/var/log/itdream-socket</Property>
     </Properties>
     <Appenders>
         <Console name="console-log" target="SYSTEM_OUT">
@@ -15,6 +15,7 @@
             <Policies>
                 <TimeBasedTriggeringPolicy interval="1" modulate="true"/>
             </Policies>
+            <DefaultRolloverStrategy max="24"/>
         </RollingFile>
         <RollingFile name="error-log" fileName="${log-path}/socket-error.log"
              filePattern="${log-path}/error-%d{yyyy-MM-dd-HH}.log">
@@ -24,15 +25,16 @@
             <Policies>
                 <TimeBasedTriggeringPolicy interval="1" modulate="true"/>
             </Policies>
+            <DefaultRolloverStrategy max="24"/>
         </RollingFile>
     </Appenders>
     <Loggers>
-        <Logger name="lf.video" level="debug" additivity="false">
+        <Logger name="socket" level="debug" additivity="false">
             <appender-ref ref="trace-log" level="debug"/>
             <appender-ref ref="error-log" level="error"/>
             <appender-ref ref="console-log" level="debug"/>
         </Logger>
-        <Root level="info" additivity="false">
+        <Root level="debug" additivity="false">
             <AppenderRef ref="trace-log"/>
         </Root>
     </Loggers>
