@@ -10,6 +10,7 @@ public class ProcessVideoRequest extends ABasicRequest {
     private String app;
     private String url;
     private Long simulationId;
-    private Long subTaskId;
+    private Long taskId;
+    private Integer kind;
     private String tsSecond;
 }

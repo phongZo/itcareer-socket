@@ -97,25 +97,40 @@ public class QueueThread extends AbstractRunable {
         String folderPathString = folderPath.toString();
 
         String inputPath = rootPath + VideoConstant.DIRECTORY_GENERAL + fileFullPath;
-        String outputPath = rootPath + VideoConstant.DIRECTORY_GENERAL + folderPathString + File.separator + data.getSimulationId() + File.separator + data.getSubTaskId();
+        String outputPath;
+        String thumbnailPath;
+        String newVideoPath;
+
+        String suffixId = (data.getTaskId() != null)
+            ? data.getTaskId().toString()
+            : (data.getSimulationId() != null ? data.getSimulationId().toString() : null);
+
+        if (suffixId == null) {
+            LOG.error("=====> Both simulationId and taskId are null. Cannot determine output folder.");
+            return;
+        }
+
+        String directoryName = data.getKind() + "_" + suffixId;
+
+        outputPath = String.join(File.separator, rootPath + VideoConstant.DIRECTORY_GENERAL, folderPathString, directoryName);
+        thumbnailPath = String.join(File.separator, folderPathString, directoryName, "poster.jpg");
+        newVideoPath = String.join(File.separator, folderPathString, directoryName, "livestream.m3u8");
+
         LOG.info("=============> Output Folder Path: {}", outputPath);
 
-        String thumbnailPath = String.join(File.separator, folderPathString, data.getSimulationId().toString(),data.getSubTaskId().toString(), "poster.jpg");
-
-        String newVideoPath = String.join(File.separator, folderPathString, data.getSimulationId().toString(),data.getSubTaskId().toString(), "livestream.m3u8");
         try {
             long duration = FFmpegUtils.handleConvertToM3U8(inputPath, outputPath, config);
-            sendMsgToQueue(true, data.getSimulationId(), data.getSubTaskId(), thumbnailPath, newVideoPath, duration);
+            sendMsgToQueue(true, data.getSimulationId(), data.getTaskId(), thumbnailPath, newVideoPath, duration);
         } catch (IOException | InterruptedException e) {
             LOG.info("============> PROCESS VIDEO FAILED WITH ERROR: {}", e.getMessage());
-            sendMsgToQueue(false, data.getSimulationId(),data.getSubTaskId(),null, null, 0);
+            sendMsgToQueue(false, data.getSimulationId(),data.getTaskId(),null, null, 0);
         }
     }
-    private void sendMsgToQueue(boolean isSuccess, Long simulationId,Long subTaskId, String thumbnail, String newVideoPath, long duration) {
+    private void sendMsgToQueue(boolean isSuccess, Long simulationId,Long taskId, String thumbnail, String newVideoPath, long duration) {
         DoneVideoProcessResponse data = new DoneVideoProcessResponse();
         data.setThumbnail(thumbnail);
         data.setSimulationId(simulationId);
-        data.setSubTaskId(subTaskId);
+        data.setTaskId(taskId);
         data.setIsSuccess(isSuccess);
         data.setContentPath(newVideoPath);
         data.setVideoDuration(duration);
