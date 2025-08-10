@@ -1,7 +1,7 @@
 #!/bin/bash
 # Install gnul tar: brew install gnu-tar - Require for Mac OS
 
-SERVER_RELEASE=192.168.1.103
+SERVER_RELEASE=192.168.155.13
 TARGET_FOLDER=/opt/deploy/dreamcareer/socket
 APP_ID=itdream-socket
 
@@ -24,10 +24,10 @@ cp cfg/log4j2.xml release/classes/log4j2.xml
 
 
 cp service-socket.service release/$APP_ID.service
-sed -i  "s/{APP_PATH}/$(printf '%s\n' "$TARGET_FOLDER" | sed -e 's/[]\/$*.^[]/\\&/g')/g" release/$APP_ID.service
+sed -i "s|{APP_PATH}|$(printf '%s\n' "$TARGET_FOLDER" | sed 's/[&/\]/\\&/g')|g" release/$APP_ID.service
 
 cp run.sh release/run.sh
-sed -i  "s/{TARGET_DIR}/$(printf '%s\n' "$TARGET_FOLDER" | sed -e 's/[]\/$*.^[]/\\&/g')/g" release/run.sh
+sed -i "s|{TARGET_DIR}|$(printf '%s\n' "$TARGET_FOLDER" | sed 's/[&/\]/\\&/g')|g" release/run.sh
 
 echo "Compress source..."
 tar -czf socket.tar.gz release
