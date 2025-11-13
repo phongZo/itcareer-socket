@@ -20,7 +20,6 @@ import lombok.Getter;
 import org.apache.logging.log4j.Logger;
 
 import java.io.File;
-import java.io.IOException;
 import java.nio.file.*;
 
 @Getter
@@ -171,7 +170,7 @@ public class QueueThread extends AbstractRunable {
                 messagePost.setResponseCode(ResponseCode.RESPONSE_CODE_SUCCESS);
                 messagePost.setData(pushNotiRequest);
 
-                MyChannelWSGroup.getInstance().sendMessage(clientChannel.getChannelId(),message.toJson());
+                MyChannelWSGroup.getInstance().sendMessage(clientChannel.getChannelId(),messagePost.toJson());
             }else{
                 LOG.info("Not found user: {}", notificationEvent.getUserId());
             }
